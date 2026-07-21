@@ -119,14 +119,16 @@ export default function OrderPage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <header className="sticky top-0 bg-white border-b border-neutral-200 px-4 py-3 flex items-center gap-3 z-10">
-        <button onClick={() => router.push("/home")} className="text-xl">
-          ‹
-        </button>
-        <h1 className="font-semibold text-neutral-800">Chọn món hôm nay</h1>
-      </header>
+      <div className="fixed top-0 left-0 right-0 z-10">
+        <div className="max-w-md mx-auto bg-white border-b border-neutral-200 px-4 py-3 flex items-center gap-3">
+          <button onClick={() => router.push("/home")} className="text-xl">
+            ‹
+          </button>
+          <h1 className="font-semibold text-neutral-800">Chọn món hôm nay</h1>
+        </div>
+      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 pb-32">
+      <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32">
         {categories.map((cat) => {
           const catDishes = dishesByCategory.get(cat.id) || [];
           const isOpen = expanded.has(cat.id);

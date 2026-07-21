@@ -126,22 +126,24 @@ export default function OrdersPage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <header className="sticky top-0 bg-white border-b border-neutral-200 px-4 py-3 flex items-center gap-3 z-10">
-        <button onClick={() => router.push("/home")} className="text-xl">
-          ‹
-        </button>
-        <h1 className="font-semibold text-neutral-800 flex-1">
-          Đồ đặt trong ngày
-        </h1>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="text-sm border border-neutral-300 rounded-lg px-2 py-1"
-        />
-      </header>
+      <div className="fixed top-0 left-0 right-0 z-10">
+        <div className="max-w-md mx-auto bg-white border-b border-neutral-200 px-4 py-3 flex items-center gap-3">
+          <button onClick={() => router.push("/home")} className="text-xl">
+            ‹
+          </button>
+          <h1 className="font-semibold text-neutral-800 flex-1">
+            Đồ đặt trong ngày
+          </h1>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="text-sm border border-neutral-300 rounded-lg px-2 py-1"
+          />
+        </div>
+      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto px-4 pt-20 pb-4">
         {loading ? (
           <div className="animate-pulse text-brand font-medium text-center py-10">
             Đang tải...
