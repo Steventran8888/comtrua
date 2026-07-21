@@ -81,6 +81,8 @@ export default function OrdersPage() {
   }, [items]);
 
   const grandTotal = items.reduce((s, it) => s + Number(it.price), 0);
+  const voucherTotal = vouchers.reduce((s, v) => s + Number(v.denomination), 0);
+  const voucherCovered = grandTotal > 0 && voucherTotal >= grandTotal;
 
   async function handleCapture() {
     if (!summaryRef.current) return;
@@ -243,9 +245,36 @@ export default function OrdersPage() {
           </>
         )}
 
-        <h2 className="font-medium text-neutral-700 mt-6 mb-2 text-sm">
-          Voucher đã gửi ({vouchers.length})
-        </h2>
+        <div className="flex items-center justify-between mt-6 mb-2">
+          <h2 className="font-medium text-neutral-700 text-sm">
+            Voucher đã gửi ({vouchers.length})
+          </h2>
+          {vouchers.length > 0 && (
+            <span className="text-sm font-semibold text-brand">
+              {formatCurrency(voucherTotal)}
+            </span>
+          )}
+        </div>
+
+        {grandTotal > 0 && (
+          <div
+            className={`flex justify-between items-center px-4 py-3 rounded-2xl font-semibold mb-3 ${
+              voucherCovered
+                ? "bg-green-50 text-green-700"
+                : "bg-amber-50 text-amber-700"
+            }`}
+          >
+            <span>
+              {voucherCovered
+                ? "✅ Voucher đã đủ"
+                : `⚠️ Còn thiếu ${formatCurrency(grandTotal - voucherTotal)}`}
+            </span>
+            <span>
+              {formatCurrency(voucherTotal)} / {formatCurrency(grandTotal)}
+            </span>
+          </div>
+        )}
+
         {vouchers.length === 0 ? (
           <p className="text-neutral-400 text-sm">Chưa có voucher nào.</p>
         ) : (
@@ -256,7 +285,7 @@ export default function OrdersPage() {
                 href={v.image_url}
                 target="_blank"
                 rel="noreferrer"
-                className="block"
+                className="block relative"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -264,6 +293,9 @@ export default function OrdersPage() {
                   alt={v.user_name}
                   className="w-full aspect-square object-cover rounded-lg border border-neutral-200"
                 />
+                <span className="absolute top-1 right-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
+                  {v.denomination / 1000}k
+                </span>
                 <p className="text-[10px] text-neutral-500 truncate mt-1">
                   {v.user_name}
                 </p>

@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
-import { todayVN } from "@/lib/date";
+import { formatCurrency, todayVN } from "@/lib/date";
 import type { Voucher } from "@/lib/types";
+
+const DENOMINATIONS = [50000, 10000] as const;
 
 export default function VoucherPage() {
   const router = useRouter();
@@ -17,6 +19,7 @@ export default function VoucherPage() {
 
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [denomination, setDenomination] = useState<number>(DENOMINATIONS[0]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -85,6 +88,7 @@ export default function VoucherPage() {
         user_id: user.id,
         user_name: fullName,
         image_url: pub.publicUrl,
+        denomination,
       });
       if (insErr) throw insErr;
 
@@ -155,6 +159,23 @@ export default function VoucherPage() {
           </label>
         )}
 
+        <p className="text-sm text-neutral-600 mb-2">Mệnh giá voucher</p>
+        <div className="flex gap-2 mb-4">
+          {DENOMINATIONS.map((d) => (
+            <button
+              key={d}
+              onClick={() => setDenomination(d)}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border ${
+                denomination === d
+                  ? "bg-brand border-brand text-white"
+                  : "border-neutral-300 text-neutral-600"
+              }`}
+            >
+              {formatCurrency(d)}
+            </button>
+          ))}
+        </div>
+
         {error && <p className="text-red-600 text-sm text-center mb-2">{error}</p>}
         {success && (
           <p className="text-green-600 text-sm text-center mb-2">
@@ -170,9 +191,18 @@ export default function VoucherPage() {
           {uploading ? "Đang gửi..." : "Gửi voucher"}
         </button>
 
-        <h2 className="font-medium text-neutral-700 mb-2 text-sm">
-          Voucher đã gửi hôm nay ({todayVouchers.length})
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-medium text-neutral-700 text-sm">
+            Voucher đã gửi hôm nay ({todayVouchers.length})
+          </h2>
+          {todayVouchers.length > 0 && (
+            <span className="text-sm font-semibold text-brand">
+              {formatCurrency(
+                todayVouchers.reduce((s, v) => s + Number(v.denomination), 0)
+              )}
+            </span>
+          )}
+        </div>
         {todayVouchers.length === 0 ? (
           <p className="text-neutral-400 text-sm">Chưa có voucher nào.</p>
         ) : (
@@ -183,7 +213,7 @@ export default function VoucherPage() {
                 href={v.image_url}
                 target="_blank"
                 rel="noreferrer"
-                className="block"
+                className="block relative"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -191,6 +221,9 @@ export default function VoucherPage() {
                   alt={v.user_name}
                   className="w-full aspect-square object-cover rounded-lg border border-neutral-200"
                 />
+                <span className="absolute top-1 right-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
+                  {v.denomination / 1000}k
+                </span>
                 <p className="text-[10px] text-neutral-500 truncate mt-1">
                   {v.user_name}
                 </p>

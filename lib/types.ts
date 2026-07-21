@@ -37,5 +37,6 @@ export interface Voucher {
   user_name: string;
   voucher_date: string;
   image_url: string;
+  denomination: number;
   created_at: string;
 }
