@@ -5,23 +5,15 @@ import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 
-type Mode = "signin" | "signup";
-
 export default function RootPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [needsName, setNeedsName] = useState(false);
-
-  // auth form state
-  const [mode, setMode] = useState<Mode>("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
-  const [authBusy, setAuthBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
 
-  // name onboarding state
+  // name onboarding state (fallback, in case Google doesn't provide a name)
   const [fullName, setFullName] = useState("");
   const [nameBusy, setNameBusy] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -102,28 +94,6 @@ export default function RootPage() {
     // On success the browser redirects away, so no further state change needed here.
   }
 
-  async function handleAuthSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setAuthError(null);
-    setAuthBusy(true);
-    try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-      }
-    } catch (err: any) {
-      setAuthError(translateAuthError(err?.message));
-    } finally {
-      setAuthBusy(false);
-    }
-  }
-
   async function handleSaveName(e: React.FormEvent) {
     e.preventDefault();
     if (!session) return;
@@ -155,7 +125,7 @@ export default function RootPage() {
     );
   }
 
-  // Logged in, but needs to provide full name (first login onboarding)
+  // Logged in, but needs to provide full name (fallback if Google didn't supply one)
   if (session && needsName) {
     return (
       <div className="flex-1 flex flex-col justify-center px-6 py-10">
@@ -190,10 +160,10 @@ export default function RootPage() {
     );
   }
 
-  // Not logged in: auth screen
+  // Not logged in: Google-only sign-in screen
   return (
     <div className="flex-1 flex flex-col justify-center px-6 py-10">
-      <div className="text-center mb-8">
+      <div className="text-center mb-10">
         <div className="text-5xl mb-3">🍜</div>
         <h1 className="text-2xl font-bold text-brand">Nét Huế</h1>
         <p className="text-neutral-500 text-sm mt-1">
@@ -204,70 +174,15 @@ export default function RootPage() {
       <button
         onClick={handleGoogleSignIn}
         disabled={googleBusy}
-        className="w-full flex items-center justify-center gap-3 border border-neutral-300 rounded-xl py-3 font-medium text-neutral-700 disabled:opacity-50 mb-6"
+        className="w-full flex items-center justify-center gap-3 border border-neutral-300 rounded-xl py-3 font-medium text-neutral-700 disabled:opacity-50"
       >
         <GoogleIcon />
         {googleBusy ? "Đang chuyển hướng..." : "Tiếp tục với Google"}
       </button>
 
-      <div className="flex items-center gap-3 mb-6">
-        <div className="flex-1 h-px bg-neutral-200" />
-        <span className="text-xs text-neutral-400">hoặc dùng email</span>
-        <div className="flex-1 h-px bg-neutral-200" />
-      </div>
-
-      <div className="flex rounded-xl bg-neutral-100 p-1 mb-5">
-        <button
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
-            mode === "signin" ? "bg-white shadow text-brand" : "text-neutral-500"
-          }`}
-          onClick={() => setMode("signin")}
-        >
-          Đăng nhập
-        </button>
-        <button
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
-            mode === "signup" ? "bg-white shadow text-brand" : "text-neutral-500"
-          }`}
-          onClick={() => setMode("signup")}
-        >
-          Đăng ký
-        </button>
-      </div>
-
-      <form onSubmit={handleAuthSubmit} className="space-y-3">
-        <input
-          type="email"
-          required
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border border-neutral-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand"
-        />
-        <input
-          type="password"
-          required
-          minLength={6}
-          placeholder="Mật khẩu (tối thiểu 6 ký tự)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full border border-neutral-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand"
-        />
-        {authError && (
-          <p className="text-red-600 text-sm text-center">{authError}</p>
-        )}
-        <button
-          type="submit"
-          disabled={authBusy}
-          className="w-full bg-brand text-white font-semibold py-3 rounded-xl disabled:opacity-50"
-        >
-          {authBusy
-            ? "Đang xử lý..."
-            : mode === "signup"
-            ? "Đăng ký"
-            : "Đăng nhập"}
-        </button>
-      </form>
+      {authError && (
+        <p className="text-red-600 text-sm text-center mt-4">{authError}</p>
+      )}
     </div>
   );
 }
@@ -293,17 +208,4 @@ function GoogleIcon() {
       />
     </svg>
   );
-}
-
-function translateAuthError(msg?: string): string {
-  if (!msg) return "Có lỗi xảy ra, vui lòng thử lại.";
-  if (msg.includes("Invalid login credentials"))
-    return "Sai email hoặc mật khẩu.";
-  if (msg.includes("already registered") || msg.includes("already exists"))
-    return "Email này đã được đăng ký, vui lòng đăng nhập.";
-  if (msg.includes("Password should be"))
-    return "Mật khẩu cần tối thiểu 6 ký tự.";
-  if (msg.includes("Unable to validate email"))
-    return "Email không hợp lệ.";
-  return msg;
 }
