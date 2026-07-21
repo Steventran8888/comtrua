@@ -62,6 +62,21 @@ export default function OrdersPage() {
     return Array.from(map.entries());
   }, [items]);
 
+  const dishSummary = useMemo(() => {
+    const map = new Map<string, { name: string; qty: number; subtotal: number }>();
+    for (const it of items) {
+      const cur = map.get(it.dish_name) || {
+        name: it.dish_name,
+        qty: 0,
+        subtotal: 0,
+      };
+      cur.qty += 1;
+      cur.subtotal += Number(it.price);
+      map.set(it.dish_name, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.qty - a.qty);
+  }, [items]);
+
   const grandTotal = items.reduce((s, it) => s + Number(it.price), 0);
 
   if (!checkedAuth) {
@@ -99,7 +114,31 @@ export default function OrdersPage() {
             Chưa có ai đặt món trong ngày này.
           </p>
         ) : (
-          <div className="space-y-3">
+          <>
+            <h2 className="font-medium text-neutral-700 mb-2 text-sm">
+              Tổng hợp món ăn ({dishSummary.length})
+            </h2>
+            <div className="border border-neutral-200 rounded-2xl divide-y divide-neutral-100 mb-5">
+              {dishSummary.map((d) => (
+                <div
+                  key={d.name}
+                  className="flex items-center justify-between px-4 py-2.5 text-sm"
+                >
+                  <span className="text-neutral-800">
+                    {d.name}{" "}
+                    <span className="text-brand font-semibold">x{d.qty}</span>
+                  </span>
+                  <span className="font-medium text-neutral-600">
+                    {formatCurrency(d.subtotal)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <h2 className="font-medium text-neutral-700 mb-2 text-sm">
+              Chi tiết theo người ({grouped.length})
+            </h2>
+            <div className="space-y-3">
             {grouped.map(([name, rows]) => {
               const subtotal = rows.reduce((s, r) => s + Number(r.price), 0);
               return (
@@ -131,7 +170,8 @@ export default function OrdersPage() {
               <span>Tổng cộng</span>
               <span className="text-brand">{formatCurrency(grandTotal)}</span>
             </div>
-          </div>
+            </div>
+          </>
         )}
 
         <h2 className="font-medium text-neutral-700 mt-6 mb-2 text-sm">
