@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { formatCurrency, todayVN } from "@/lib/date";
+import { formatCurrency, formatDateVN, todayVN } from "@/lib/date";
 import type { OrderItem, Voucher } from "@/lib/types";
 
 export default function OrdersPage() {
   const router = useRouter();
+  const summaryRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [checkedAuth, setCheckedAuth] = useState(false);
   const [date, setDate] = useState(todayVN());
   const [items, setItems] = useState<OrderItem[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [capturing, setCapturing] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -79,6 +82,40 @@ export default function OrdersPage() {
 
   const grandTotal = items.reduce((s, it) => s + Number(it.price), 0);
 
+  async function handleCapture() {
+    if (!summaryRef.current) return;
+    setCaptureError(null);
+    setCapturing(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(summaryRef.current, {
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+      });
+      const fileName = `tong-hop-mon-${date}.png`;
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], fileName, { type: "image/png" });
+
+      if (
+        typeof navigator.share === "function" &&
+        navigator.canShare?.({ files: [file] })
+      ) {
+        await navigator.share({ files: [file], title: "Tổng hợp món ăn" });
+      } else {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = fileName;
+        link.click();
+      }
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        setCaptureError("Không thể tạo ảnh, vui lòng thử lại.");
+      }
+    } finally {
+      setCapturing(false);
+    }
+  }
+
   if (!checkedAuth) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -118,22 +155,52 @@ export default function OrdersPage() {
             <h2 className="font-medium text-neutral-700 mb-2 text-sm">
               Tổng hợp món ăn ({dishSummary.length})
             </h2>
-            <div className="border border-neutral-200 rounded-2xl divide-y divide-neutral-100 mb-5">
-              {dishSummary.map((d) => (
-                <div
-                  key={d.name}
-                  className="flex items-center justify-between px-4 py-2.5 text-sm"
-                >
-                  <span className="text-neutral-800">
-                    {d.name}{" "}
-                    <span className="text-brand font-semibold">x{d.qty}</span>
-                  </span>
-                  <span className="font-medium text-neutral-600">
-                    {formatCurrency(d.subtotal)}
-                  </span>
-                </div>
-              ))}
+            <div
+              ref={summaryRef}
+              className="bg-white border border-neutral-200 rounded-2xl overflow-hidden mb-2"
+            >
+              <div className="flex items-center justify-between px-4 py-2 bg-neutral-50 border-b border-neutral-200">
+                <span className="text-xs font-medium text-neutral-500">
+                  Nét Huế
+                </span>
+                <span className="text-xs text-neutral-400">
+                  {formatDateVN(date)}
+                </span>
+              </div>
+              <div className="divide-y divide-neutral-100">
+                {dishSummary.map((d) => (
+                  <div
+                    key={d.name}
+                    className="flex items-center justify-between px-4 py-2.5 text-sm"
+                  >
+                    <span className="text-neutral-800">
+                      {d.name}{" "}
+                      <span className="text-brand font-semibold">x{d.qty}</span>
+                    </span>
+                    <span className="font-medium text-neutral-600">
+                      {formatCurrency(d.subtotal)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center px-4 py-3 bg-neutral-50 border-t border-neutral-200 font-semibold">
+                <span>Tổng tiền</span>
+                <span className="text-brand">{formatCurrency(grandTotal)}</span>
+              </div>
             </div>
+
+            <button
+              onClick={handleCapture}
+              disabled={capturing}
+              className="w-full mb-5 flex items-center justify-center gap-2 border border-neutral-300 rounded-xl py-2.5 text-sm font-medium text-neutral-700 disabled:opacity-50"
+            >
+              📸 {capturing ? "Đang tạo ảnh..." : "Chụp ảnh gửi nhà hàng"}
+            </button>
+            {captureError && (
+              <p className="text-red-600 text-xs text-center -mt-4 mb-4">
+                {captureError}
+              </p>
+            )}
 
             <h2 className="font-medium text-neutral-700 mb-2 text-sm">
               Chi tiết theo người ({grouped.length})
