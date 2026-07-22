@@ -45,8 +45,8 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col px-6 py-8">
-      <div className="text-center mb-8">
+    <div className="flex-1 flex flex-col px-6 py-8 overflow-y-auto">
+      <div className="text-center mb-6">
         <div className="text-4xl mb-2">🍜</div>
         <h1 className="text-xl font-bold text-brand">Nét Huế</h1>
         <p className="text-neutral-500 text-sm mt-1">
@@ -54,7 +54,7 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="flex-1 flex flex-col gap-4 justify-center">
+      <div className="flex flex-col gap-3">
         <HomeButton
           emoji="🍽️"
           title="Chọn món"
@@ -72,6 +72,18 @@ export default function HomePage() {
           title="Xem đồ đặt hôm nay"
           subtitle="Danh sách món của cả nhóm theo ngày"
           onClick={() => router.push("/orders")}
+        />
+        <HomeButton
+          emoji="🎟️"
+          title="Voucher"
+          subtitle="Xem lại voucher theo ngày, gửi cho nhà hàng"
+          onClick={() => router.push("/vouchers")}
+        />
+        <HomeButton
+          emoji="🍀"
+          title="Người may mắn"
+          subtitle="Random 2 người trong danh sách đặt đồ"
+          onClick={() => router.push("/lucky")}
         />
       </div>
 
